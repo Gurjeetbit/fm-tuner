@@ -7,21 +7,23 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FM Tuner">
-<meta name="theme-color" content="#14171c">
+<meta name="theme-color" content="#0e1116">
 <title>FM Tuner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-/* Layout idea: one fixed screen like a car head unit. Lit display on top, sliding dial under a fixed needle, big thumb controls, six presets, station list. */
+/* Layout idea: one fixed screen like a modern car head unit. Glass LCD with status chips and level meter, sliding dial under a fixed needle, big thumb controls, six presets, station list. */
 :root {
-  --body: #14171c;        /* head-unit plastic */
-  --panel: #1d2128;       /* raised panels and buttons */
-  --edge: #2c323c;        /* bevels and borders */
-  --glass: #2a1c08;       /* unlit display glass */
+  --body: #0e1116;        /* head-unit chassis */
+  --panel: #1a1e25;       /* raised keys */
+  --edge: #2a303a;        /* bevels and borders */
+  --glass: #1f1606;       /* unlit display glass */
   --lit: #ffb347;         /* backlight amber */
+  --tech: #5fd8e0;        /* status chips and data readouts */
   --needle: #ff4b3a;      /* tuning needle */
-  --label: #8f98a6;       /* printed labels */
+  --label: #8c95a3;       /* printed labels */
+  --ink: #d9dee6;         /* key legends */
   --font-display: "Share Tech Mono", ui-monospace, Menlo, monospace;
   --font-body: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: dark;
@@ -29,7 +31,8 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; margin: 0; }
 body {
-  background: var(--body);
+  background: radial-gradient(140% 70% at 50% -10%, #1b2029 0%, var(--body) 55%);
+  background-color: var(--body);
   color: var(--label);
   font-family: var(--font-body);
   font-size: 17px;
@@ -43,128 +46,165 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 16px);
+  gap: 11px;
+  padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 16px);
 }
 button, select, input { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--tech); outline-offset: 2px; }
 
 /* Top bar */
-.bar { display: flex; align-items: center; gap: 10px; }
-.brand { font-weight: 700; font-size: 20px; color: #d7dce4; text-transform: uppercase; margin-right: auto; }
-.brand small { font-size: 13px; font-weight: 500; color: var(--label); margin-left: 6px; }
-.bar select, .bar input {
-  background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
-  height: 36px; padding: 0 10px; color: #d7dce4; text-transform: uppercase; font-size: 15px;
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand b { font-weight: 700; font-size: 20px; color: var(--ink); text-transform: uppercase; }
+.brand small { font-size: 13px; text-transform: uppercase; }
+.brand .led { width: 7px; height: 7px; border-radius: 50%; background: #3a2a12; align-self: center; margin-left: auto; transition: background .3s, box-shadow .3s; }
+.unit:not(.off) .brand .led { background: var(--tech); box-shadow: 0 0 8px var(--tech); }
+.bar { display: flex; gap: 8px; }
+.bar select, .bar input, .bar .toggle {
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 9px;
+  height: 38px; padding: 0 10px; color: var(--ink); font-size: 15px; min-width: 0;
 }
-.bar input { width: 104px; text-transform: none; }
+.bar select { flex: 1 1 46%; text-transform: uppercase; }
+.bar input { flex: 1 1 34%; }
 .bar input::placeholder { color: var(--label); }
+.bar .toggle { flex: 0 0 auto; font-weight: 700; font-size: 14px; color: var(--label); }
+.bar .toggle[aria-pressed="true"] { color: var(--tech); border-color: #2c6a70; box-shadow: inset 0 0 10px rgba(95,216,224,.18); }
 
 /* Display */
 .display {
-  background: radial-gradient(120% 140% at 50% 0%, #3a270b 0%, var(--glass) 60%);
-  border: 1px solid #000; border-radius: 12px;
-  box-shadow: inset 0 2px 10px rgba(0,0,0,.7), 0 1px 0 var(--edge);
-  padding: 12px 14px 10px;
-  display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: end;
+  position: relative; overflow: hidden;
+  background: radial-gradient(120% 140% at 50% 0%, #3b280c 0%, var(--glass) 62%);
+  border: 1px solid #000; border-radius: 14px;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,.75), 0 1px 0 var(--edge);
+  padding: 10px 14px 10px;
+  display: flex; flex-direction: column; gap: 4px;
   color: var(--lit);
+  text-shadow: 0 0 12px rgba(255,179,71,.5);
   transition: color .3s, text-shadow .3s;
-  text-shadow: 0 0 12px rgba(255,179,71,.55);
+}
+.display::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, rgba(255,255,255,.07) 0%, transparent 38%);
 }
 .unit.off .display { color: #5a3f17; text-shadow: none; }
-.freq { font-family: var(--font-display); font-size: 62px; line-height: 1; font-variant-numeric: tabular-nums; }
-.freq span { font-size: 20px; margin-left: 6px; }
-.meta { text-align: right; font-size: 14px; text-transform: uppercase; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.bars { display: flex; gap: 3px; align-items: flex-end; height: 18px; }
+.unit.off .display .chip, .unit.off .display .clock { color: #3d4b4f; border-color: #2a2f33; text-shadow: none; }
+.top { display: flex; align-items: center; gap: 6px; min-height: 20px; }
+.chip {
+  font-family: var(--font-display); font-size: 12px; line-height: 1; text-transform: uppercase;
+  color: var(--tech); border: 1px solid rgba(95,216,224,.45); border-radius: 4px; padding: 3px 5px;
+  text-shadow: 0 0 8px rgba(95,216,224,.5); white-space: nowrap; max-width: 46%; overflow: hidden; text-overflow: ellipsis;
+}
+.chip:empty { display: none; }
+.clock { margin-left: auto; font-family: var(--font-display); font-size: 14px; color: var(--tech); text-shadow: 0 0 8px rgba(95,216,224,.5); font-variant-numeric: tabular-nums; }
+.mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.freq { font-family: var(--font-display); font-size: 60px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.freq b { font-weight: 400; }
+.freq span { font-size: 19px; margin-left: 6px; }
+.side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-bottom: 4px; }
+.bars { display: flex; gap: 3px; align-items: flex-end; height: 16px; }
 .bars i { width: 4px; background: currentColor; opacity: .22; border-radius: 1px; }
-.bars i:nth-child(1){height:5px} .bars i:nth-child(2){height:8px} .bars i:nth-child(3){height:11px} .bars i:nth-child(4){height:14px} .bars i:nth-child(5){height:18px}
+.bars i:nth-child(1){height:4px} .bars i:nth-child(2){height:7px} .bars i:nth-child(3){height:10px} .bars i:nth-child(4){height:13px} .bars i:nth-child(5){height:16px}
 .bars.on i { opacity: 1; }
 .bars.busy i { animation: scan 1s infinite; }
 .bars.busy i:nth-child(2){animation-delay:.1s} .bars.busy i:nth-child(3){animation-delay:.2s} .bars.busy i:nth-child(4){animation-delay:.3s} .bars.busy i:nth-child(5){animation-delay:.4s}
 @keyframes scan { 0%,100% { opacity:.22 } 50% { opacity:1 } }
-.name {
-  grid-column: 1 / -1; font-size: 24px; font-weight: 600; text-transform: uppercase;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 29px;
-}
-.status { grid-column: 1 / -1; font-size: 14px; text-transform: uppercase; opacity: .8; min-height: 17px; }
+#viz { width: 96px; height: 30px; display: block; }
+.name { font-size: 24px; font-weight: 600; text-transform: uppercase; white-space: nowrap; overflow: hidden; min-height: 29px; }
+.name span { display: inline-block; }
+.name.scroll span { animation: marquee var(--dur, 8s) ease-in-out infinite alternate; }
+@keyframes marquee { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--shift, 0)); } }
+.status { font-size: 14px; text-transform: uppercase; opacity: .85; min-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Dial */
 .dial {
-  position: relative; height: 76px; overflow: hidden; touch-action: none; cursor: grab;
-  background: linear-gradient(#0d0f12, #181b21);
-  border: 1px solid #000; border-radius: 12px;
-  box-shadow: inset 0 2px 8px rgba(0,0,0,.8), 0 1px 0 var(--edge);
+  position: relative; height: 74px; overflow: hidden; touch-action: none; cursor: grab;
+  background: linear-gradient(#0a0c0f, #161a20);
+  border: 1px solid #000; border-radius: 14px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.85), 0 1px 0 var(--edge);
 }
 .dial:active { cursor: grabbing; }
 .strip { position: absolute; top: 0; bottom: 0; left: 0; will-change: transform; }
 .ticks {
-  position: absolute; left: 0; right: 0; top: 0; height: 30px;
+  position: absolute; top: 0; height: 30px;
   background:
     repeating-linear-gradient(90deg, #c9cfd8 0 2px, transparent 2px 60px) 0 0 / 100% 22px no-repeat,
     repeating-linear-gradient(90deg, #6d7684 0 1px, transparent 1px 12px) 0 0 / 100% 12px no-repeat;
 }
 .num { position: absolute; top: 28px; transform: translateX(-50%); font-family: var(--font-display); font-size: 14px; color: #c9cfd8; }
-.mark { position: absolute; bottom: 8px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--lit); opacity: .45; }
+.mark { position: absolute; bottom: 8px; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: var(--lit); opacity: .4; }
 .mark.local { opacity: 1; box-shadow: 0 0 8px var(--lit); }
-.needle { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; background: var(--needle); box-shadow: 0 0 10px var(--needle); pointer-events: none; }
+.mark.hq { background: var(--tech); box-shadow: 0 0 8px var(--tech); }
+.needle { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; background: var(--needle); box-shadow: 0 0 12px var(--needle); pointer-events: none; z-index: 2; }
 .dial::before, .dial::after { content: ""; position: absolute; top: 0; bottom: 0; width: 56px; z-index: 1; pointer-events: none; }
-.dial::before { left: 0; background: linear-gradient(90deg, #0d0f12, transparent); }
-.dial::after { right: 0; background: linear-gradient(-90deg, #0d0f12, transparent); }
+.dial::before { left: 0; background: linear-gradient(90deg, #0a0c0f, transparent); }
+.dial::after { right: 0; background: linear-gradient(-90deg, #0a0c0f, transparent); }
 
 /* Controls */
-.controls { display: grid; grid-template-columns: 1fr 84px 1fr; gap: 12px; align-items: center; }
+.controls { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 12px; align-items: center; }
 .key {
-  height: 56px; border-radius: 12px; border: 1px solid var(--edge);
+  height: 54px; border-radius: 12px; border: 1px solid var(--edge);
   background: linear-gradient(#262b34, var(--panel));
-  box-shadow: 0 2px 0 #000; color: #d7dce4;
+  box-shadow: 0 2px 0 #000, inset 0 1px 0 rgba(255,255,255,.05); color: var(--ink);
   font-weight: 600; font-size: 17px; text-transform: uppercase;
 }
 .key:active { transform: translateY(2px); box-shadow: none; }
-.power { height: 84px; border-radius: 50%; font-size: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.power svg { width: 26px; height: 26px; }
-.unit:not(.off) .power { color: var(--lit); border-color: #7a5520; box-shadow: 0 2px 0 #000, 0 0 18px rgba(255,179,71,.25); }
+.power { height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.power svg { width: 28px; height: 28px; }
+.unit:not(.off) .power { color: var(--lit); border-color: #7a5520; box-shadow: 0 2px 0 #000, 0 0 20px rgba(255,179,71,.28); }
 
-.presets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-.preset { height: 50px; padding: 0 2px; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; overflow: hidden; }
+.presets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
+.preset { height: 48px; padding: 0 2px; font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; overflow: hidden; }
 .preset b { font-family: var(--font-display); font-size: 17px; font-weight: 400; }
 .preset.set b { color: var(--lit); }
 .preset span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--label); }
-.hint { font-size: 13px; text-transform: uppercase; text-align: center; margin: -4px 0; }
+.hint { font-size: 13px; text-transform: uppercase; text-align: center; margin: -3px 0; }
 
 /* Station list */
 .list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--edge); }
 .row {
-  width: 100%; display: grid; grid-template-columns: 62px 1fr auto; gap: 10px; align-items: baseline;
-  padding: 11px 4px; background: none; border: 0; border-bottom: 1px solid #20242b; text-align: left;
+  width: 100%; display: grid; grid-template-columns: 58px 1fr auto; gap: 10px; align-items: baseline;
+  padding: 11px 4px; background: none; border: 0; border-bottom: 1px solid #1d2128; text-align: left;
 }
-.row .f { font-family: var(--font-display); font-size: 18px; color: #d7dce4; font-variant-numeric: tabular-nums; }
-.row .n { color: #d7dce4; font-size: 18px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row .t { font-size: 13px; text-transform: uppercase; }
+.row .f { font-family: var(--font-display); font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.row .n { color: var(--ink); font-size: 18px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .t { font-family: var(--font-display); font-size: 12px; text-transform: uppercase; }
+.row .t.hq { color: var(--tech); }
 .row.on .f, .row.on .n { color: var(--lit); }
+.section { padding: 10px 4px 4px; font-size: 13px; text-transform: uppercase; color: var(--tech); }
 .empty { padding: 24px 4px; text-align: center; line-height: 1.4; }
 .empty button { margin-top: 12px; padding: 0 20px; }
-@media (max-height: 640px) { .freq { font-size: 48px; } .power { height: 68px; } .controls { grid-template-columns: 1fr 68px 1fr; } .hint { display: none; } }
-@media (prefers-reduced-motion: reduce) { .bars.busy i { animation: none; opacity: .6; } .strip { transition: none !important; } }
+@media (max-height: 700px) { .freq { font-size: 48px; } .power { height: 66px; } .controls { grid-template-columns: 1fr 66px 1fr; } .key { height: 48px; } .hint { display: none; } }
+@media (prefers-reduced-motion: reduce) { .bars.busy i, .name.scroll span { animation: none; } .bars.busy i { opacity: .6; } }
 </style>
 </head>
 <body>
 <div class="unit off" id="unit">
+  <div class="brand"><b>FM Tuner</b><small>Digital receiver</small><span class="led" aria-hidden="true"></span></div>
   <div class="bar">
-    <div class="brand">FM Tuner<small>87.5 to 108</small></div>
-    <input id="search" type="search" placeholder="Find station" autocomplete="off" aria-label="Find a station by name">
     <select id="region" aria-label="Area"></select>
+    <input id="search" type="search" placeholder="Find any station" autocomplete="off" aria-label="Find a station by name, anywhere">
+    <button class="toggle" id="hq" type="button" aria-pressed="false" aria-label="Show only high quality streams, 128 kbps and above">HQ</button>
   </div>
 
   <div class="display" aria-live="polite">
-    <div class="freq"><b id="freq" style="font-weight:400">98.3</b><span>MHz</span></div>
-    <div class="meta"><div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div><div id="mode">Stereo</div></div>
-    <div class="name" id="name">Loading stations</div>
+    <div class="top">
+      <span class="chip" id="chipRegion"></span>
+      <span class="chip" id="chipQ"></span>
+      <span class="chip" id="chipCC"></span>
+      <span class="clock" id="clock"></span>
+    </div>
+    <div class="mid">
+      <div class="freq"><b id="freq">98.3</b><span>MHz</span></div>
+      <div class="side"><div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div><canvas id="viz" aria-hidden="true"></canvas></div>
+    </div>
+    <div class="name" id="name"><span>Loading stations</span></div>
     <div class="status" id="status">Radio is off</div>
   </div>
 
   <div class="dial" id="dial" role="slider" tabindex="0" aria-label="Tuning dial" aria-valuemin="87.5" aria-valuemax="108" aria-valuenow="98.3">
-    <div class="strip" id="strip"><div class="ticks"></div></div>
+    <div class="strip" id="strip"><div class="ticks" id="ticks"></div></div>
     <div class="needle"></div>
   </div>
 
@@ -177,7 +217,7 @@ button { cursor: pointer; }
   </div>
 
   <div class="presets" id="presets"></div>
-  <div class="hint">Hold a number to save the station you are on</div>
+  <div class="hint">Drag the dial to tune. Hold a number to save the station.</div>
 
   <div class="list" id="list"></div>
 </div>
@@ -187,52 +227,126 @@ button { cursor: pointer; }
 <script>
 (function () {
   "use strict";
-  var MIN = 87.5, MAX = 108, PPM = 60, PAD = 400;
+  var MIN = 87.5, MAX = 108, PPM = 60, PAD = 400, MAXLOCAL = 48;
   var MIRRORS = ["de1", "nl1", "at1", "de2", "fi1"];
+  var IN = "countrycode=IN";
+
+  // q: searches whose results count as local to the area. fill: tops up a thin area so the dial is never empty.
   var REGIONS = [
-    ["Mumbai", ["mumbai", "bombay", "maharashtra", "marathi"]],
-    ["Delhi", ["delhi", "ncr", "noida", "gurgaon"]],
-    ["Bengaluru", ["bengaluru", "bangalore", "karnataka", "kannada"]],
-    ["Kolkata", ["kolkata", "calcutta", "west bengal", "bengali", "bangla"]],
-    ["Chennai", ["chennai", "madras", "tamil"]],
-    ["Hyderabad", ["hyderabad", "telangana", "telugu"]],
-    ["Pune", ["pune", "maharashtra", "marathi"]],
-    ["Punjab", ["punjab", "punjabi", "chandigarh", "amritsar", "ludhiana"]],
-    ["All India", []]
+    { g: "India", n: "Mumbai", q: [IN + "&name=mumbai", IN + "&state=Maharashtra", IN + "&language=marathi"], fill: IN },
+    { g: "India", n: "Delhi", q: [IN + "&name=delhi", IN + "&state=Delhi"], fill: IN },
+    { g: "India", n: "Jamshedpur", q: [IN + "&name=jamshedpur", IN + "&state=Jharkhand", IN + "&name=jharkhand", IN + "&language=santali"], fill: IN + "&language=hindi" },
+    { g: "India", n: "Ranchi", q: [IN + "&name=ranchi", IN + "&state=Jharkhand", IN + "&name=jharkhand", IN + "&language=nagpuri"], fill: IN + "&language=hindi" },
+    { g: "India", n: "Chandigarh", q: [IN + "&name=chandigarh", IN + "&state=Chandigarh", IN + "&state=Punjab", IN + "&language=punjabi"], fill: IN },
+    { g: "India", n: "Punjab", q: [IN + "&state=Punjab", IN + "&language=punjabi", IN + "&name=amritsar", "tag=gurbani"], fill: IN },
+    { g: "India", n: "Kashmir", q: [IN + "&name=kashmir", IN + "&state=Kashmir", IN + "&name=srinagar", IN + "&name=jammu", "language=kashmiri", "language=dogri"], fill: IN },
+    { g: "India", n: "Ahmedabad", q: [IN + "&name=ahmedabad", IN + "&state=Gujarat", IN + "&language=gujarati"], fill: IN },
+    { g: "India", n: "Bengaluru", q: [IN + "&name=bangalore", IN + "&name=bengaluru", IN + "&state=Karnataka", IN + "&language=kannada"], fill: IN },
+    { g: "India", n: "Kolkata", q: [IN + "&name=kolkata", IN + "&state=Bengal", IN + "&language=bengali"], fill: IN },
+    { g: "India", n: "Chennai", q: [IN + "&name=chennai", IN + "&state=Tamil", IN + "&language=tamil"], fill: IN },
+    { g: "India", n: "Hyderabad", q: [IN + "&name=hyderabad", IN + "&state=Telangana", IN + "&language=telugu"], fill: IN },
+    { g: "India", n: "Pune", q: [IN + "&name=pune", IN + "&state=Maharashtra"], fill: IN },
+    { g: "India", n: "All India", q: [IN], lim: 120 },
+
+    { g: "Punjabi overseas", n: "Canada: Brampton, Surrey", short: "Canada", q: ["countrycode=CA&language=punjabi", "countrycode=CA&tag=punjabi", "countrycode=CA&tag=desi", "countrycode=CA&tag=south asian"], fill: "language=punjabi" },
+    { g: "Punjabi overseas", n: "UK: Southall, Birmingham", short: "UK", q: ["countrycode=GB&language=punjabi", "countrycode=GB&tag=punjabi", "countrycode=GB&tag=bhangra", "countrycode=GB&tag=asian"], fill: "language=punjabi" },
+    { g: "Punjabi overseas", n: "USA: California, New York", short: "USA", q: ["countrycode=US&language=punjabi", "countrycode=US&tag=punjabi", "countrycode=US&tag=desi", "countrycode=US&tag=bollywood"], fill: "language=punjabi" },
+    { g: "Punjabi overseas", n: "Australia and NZ", short: "AU NZ", q: ["countrycode=AU&language=punjabi", "countrycode=NZ&language=punjabi", "countrycode=AU&tag=punjabi", "countrycode=NZ&tag=punjabi", "countrycode=AU&tag=bollywood"], fill: "language=punjabi" },
+    { g: "Punjabi overseas", n: "Gulf: Dubai", short: "Gulf", q: ["countrycode=AE&language=punjabi", "countrycode=AE&language=hindi", "countrycode=AE&tag=bollywood", "countrycode=AE&tag=desi"], fill: "language=punjabi" },
+    { g: "Punjabi overseas", n: "Punjabi worldwide", short: "Punjabi", q: ["language=punjabi", "tag=punjabi", "tag=bhangra", "tag=gurbani"] },
+
+    { g: "World", n: "London", q: ["countrycode=GB&name=london", "countrycode=GB&state=London", "countrycode=GB&name=bbc"], fill: "countrycode=GB" },
+    { g: "World", n: "New York", q: ["countrycode=US&state=New York", "countrycode=US&name=new york"], fill: "countrycode=US" },
+    { g: "World", n: "Toronto", q: ["countrycode=CA&state=Ontario", "countrycode=CA&name=toronto"], fill: "countrycode=CA" },
+    { g: "World", n: "Dubai", q: ["countrycode=AE"], lim: 80 },
+    { g: "World", n: "Singapore", q: ["countrycode=SG"], lim: 80 },
+    { g: "World", n: "World top 100", short: "World", q: [""], lim: 100 }
   ];
 
   var $ = function (id) { return document.getElementById(id); };
   var unit = $("unit"), audio = $("audio"), dial = $("dial"), strip = $("strip");
-  var elFreq = $("freq"), elName = $("name"), elStatus = $("status"), elBars = $("bars"), elMode = $("mode");
-  var elList = $("list"), elRegion = $("region"), elSearch = $("search"), elPresets = $("presets");
+  var elFreq = $("freq"), elName = $("name"), elStatus = $("status"), elBars = $("bars");
+  var elList = $("list"), elRegion = $("region"), elSearch = $("search"), elPresets = $("presets"), elHQ = $("hq");
+  var chipRegion = $("chipRegion"), chipQ = $("chipQ"), chipCC = $("chipCC"), elClock = $("clock");
 
-  var all = [];        // every station from the directory
-  var band = [];       // stations placed on the dial, sorted by frequency
-  var current = null;  // station under the needle
-  var freq = 98.3;
-  var on = false;
+  var data = { local: [], fill: [] }; // stations for the chosen area
+  var found = [];                      // results of a worldwide name search
+  var band = [];                       // stations placed on the dial, sorted by frequency
+  var current = null, freq = 98.3, on = false, live = false, retries = 0;
+  var mirror = null, loadToken = 0, searchToken = 0;
+  var hqOnly = !!load("fm.hq", false);
   var presets = load("fm.presets", [null, null, null, null, null, null]);
+  try { localStorage.removeItem("fm.cache"); } catch (e) {}
 
   function load(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function clamp(v) { return Math.min(MAX, Math.max(MIN, v)); }
   function fmt(f) { return f.toFixed(1); }
+  function region() { return REGIONS.filter(function (r) { return r.n === elRegion.value; })[0] || REGIONS[0]; }
+  function quality(s) {
+    var b = s.bitrate || 0, c = (s.codec || "").toUpperCase().replace("AAC+", "HE-AAC");
+    if (b >= 192) return "HD " + b;
+    if (b >= 128) return "HQ " + b;
+    if (b > 0) return (c ? c + " " : "") + b;
+    return c;
+  }
+
+  /* ---------- display ---------- */
+  function setName(text) {
+    var span = elName.firstChild;
+    span.textContent = text;
+    elName.classList.remove("scroll");
+    requestAnimationFrame(function () {
+      var over = span.scrollWidth - elName.clientWidth;
+      if (over > 4) {
+        elName.style.setProperty("--shift", -over + "px");
+        elName.style.setProperty("--dur", Math.max(4, over / 22) + "s");
+        elName.classList.add("scroll");
+      }
+    });
+  }
+  function setStatus(text, bars) {
+    elStatus.textContent = text;
+    elBars.className = "bars" + (bars ? " " + bars : "");
+    live = bars === "on";
+  }
+  function tick() {
+    var d = new Date();
+    elClock.textContent = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+  }
+  tick(); setInterval(tick, 15000);
+
+  // Level meter: a visual effect that moves while a station is playing. It does not analyse the audio.
+  var viz = $("viz"), vctx = viz.getContext("2d"), levels = [], still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (var li = 0; li < 18; li++) levels.push(0);
+  function sizeViz() { var d = window.devicePixelRatio || 1; viz.width = viz.clientWidth * d; viz.height = viz.clientHeight * d; }
+  function drawViz() {
+    var w = viz.width, h = viz.height, n = levels.length, bw = w / n, t = performance.now() / 1000;
+    vctx.clearRect(0, 0, w, h);
+    for (var i = 0; i < n; i++) {
+      var target = live && on ? (still ? 0.5 - i * 0.015 : 0.22 + 0.5 * Math.abs(Math.sin(t * (1.1 + i * 0.29) + i * 1.7)) * (1 - i / n * 0.45) + Math.random() * 0.18) : 0.05;
+      levels[i] += (target - levels[i]) * 0.22;
+      var bh = Math.max(1, levels[i] * h);
+      vctx.fillStyle = i > n * 0.72 ? "rgba(95,216,224,.9)" : (on ? "rgba(255,179,71,.95)" : "rgba(90,63,23,.9)");
+      vctx.fillRect(i * bw + 1, h - bh, Math.max(1, bw - 2), bh);
+    }
+    requestAnimationFrame(drawViz);
+  }
+  sizeViz(); requestAnimationFrame(drawViz);
 
   /* ---------- dial ---------- */
   strip.style.width = ((MAX - MIN) * PPM + PAD * 2) + "px";
-  var ticks = strip.querySelector(".ticks");
-  ticks.style.left = (PAD - 30 - 1) + "px"; // 87.5 sits half a MHz before the 88 line
-  ticks.style.right = "auto";
+  var ticks = $("ticks");
+  ticks.style.left = (PAD + 0.5 * PPM - 60 - 1) + "px";
   ticks.style.width = ((MAX - MIN) * PPM + 62) + "px";
-  ticks.style.backgroundPosition = "0 0, 6px 0";
   for (var m = 88; m <= 108; m += 2) {
-    var n = document.createElement("div");
-    n.className = "num"; n.textContent = m; n.style.left = x(m) + "px";
-    strip.appendChild(n);
+    var nm = document.createElement("div");
+    nm.className = "num"; nm.textContent = m; nm.style.left = x(m) + "px";
+    strip.appendChild(nm);
   }
   function x(f) { return PAD + (f - MIN) * PPM; }
   function renderDial(animate) {
-    strip.style.transition = animate ? "transform .35s cubic-bezier(.2,.8,.2,1)" : "none";
+    strip.style.transition = animate && !still ? "transform .35s cubic-bezier(.2,.8,.2,1)" : "none";
     strip.style.transform = "translateX(" + (dial.clientWidth / 2 - x(freq)) + "px)";
     elFreq.textContent = fmt(freq);
     dial.setAttribute("aria-valuenow", fmt(freq));
@@ -242,27 +356,22 @@ button { cursor: pointer; }
     band.forEach(function (s) { var dd = Math.abs(s.f - f); if (dd < d) { d = dd; best = s; } });
     return best;
   }
-
   var drag = null;
-  dial.addEventListener("pointerdown", function (e) {
-    drag = { x: e.clientX, f: freq };
-    dial.setPointerCapture(e.pointerId);
-    audio.muted = true;
-  });
+  dial.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, f: freq }; dial.setPointerCapture(e.pointerId); audio.muted = true; });
   dial.addEventListener("pointermove", function (e) {
     if (!drag) return;
     freq = clamp(drag.f - (e.clientX - drag.x) / PPM);
     renderDial(false);
-    var s = nearest(freq);
-    var hit = s && Math.abs(s.f - freq) < 0.12;
-    elName.textContent = hit ? s.name : "· · ·";
+    var s = nearest(freq), hit = s && Math.abs(s.f - freq) < 0.12;
+    elName.firstChild.textContent = hit ? s.name : "· · ·";
+    elName.classList.remove("scroll");
     elBars.className = "bars" + (hit && on ? " on" : "");
   });
   function endDrag() {
     if (!drag) return;
     drag = null; audio.muted = false;
     var s = nearest(freq);
-    if (s) tune(s, true); else renderDial(true);
+    if (s) tune(s); else renderDial(true);
   }
   dial.addEventListener("pointerup", endDrag);
   dial.addEventListener("pointercancel", endDrag);
@@ -270,28 +379,25 @@ button { cursor: pointer; }
     if (e.key === "ArrowRight") { seek(1); e.preventDefault(); }
     if (e.key === "ArrowLeft") { seek(-1); e.preventDefault(); }
   });
-  window.addEventListener("resize", function () { renderDial(false); });
+  window.addEventListener("resize", function () { renderDial(false); sizeViz(); });
 
   /* ---------- playback ---------- */
-  function setStatus(text, bars) {
-    elStatus.textContent = text;
-    elBars.className = "bars" + (bars ? " " + bars : "");
-  }
-  function tune(s, userAction) {
-    current = s; freq = s.f;
+  function tune(s) {
+    current = s; freq = s.f; retries = 0;
     renderDial(true);
-    elName.textContent = s.name;
-    elMode.textContent = s.bitrate ? s.bitrate + " kbps" : "Stereo";
+    setName(s.name);
+    chipQ.textContent = quality(s);
+    chipCC.textContent = s.cc && s.cc !== "IN" ? s.cc : "";
     save("fm.last", s.id);
     markList();
     if (on) play(); else setStatus("Radio is off. Press the power button.");
     if ("mediaSession" in navigator) {
-      try { navigator.mediaSession.metadata = new MediaMetadata({ title: s.name, artist: fmt(s.f) + " MHz", album: "FM Tuner" }); } catch (e) {}
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: s.name, artist: fmt(s.f) + " MHz  " + quality(s), album: "FM Tuner", artwork: icon ? [{ src: icon, sizes: "180x180", type: "image/png" }] : [] }); } catch (e) {}
     }
   }
   function play() {
     if (!current) return;
-    setStatus("Tuning", "busy");
+    setStatus(retries ? "Reconnecting" : "Tuning", "busy");
     audio.src = current.url;
     var p = audio.play();
     if (p && p.catch) p.catch(function (err) {
@@ -311,12 +417,22 @@ button { cursor: pointer; }
       next = dir > 0 ? band.filter(function (s) { return s.f > freq; })[0] || band[0]
                      : band.filter(function (s) { return s.f < freq; }).pop() || band[band.length - 1];
     } else next = band[(i + dir + band.length) % band.length];
-    tune(next, true);
+    tune(next);
   }
-  audio.addEventListener("playing", function () { if (on) setStatus("On air", "on"); });
-  audio.addEventListener("waiting", function () { if (on) setStatus("Buffering", "busy"); });
-  audio.addEventListener("stalled", function () { if (on && audio.paused) setStatus("Weak signal", "busy"); });
-  audio.addEventListener("error", function () { if (on && audio.getAttribute("src")) setStatus("No signal from this station. Press Seek for the next one."); });
+  function lost() {
+    if (!on || !audio.getAttribute("src")) return;
+    if (retries < 2) { retries++; setStatus("Reconnecting", "busy"); setTimeout(function () { if (on) play(); }, 2000); }
+    else setStatus("No signal from this station. Press Seek for the next one.");
+  }
+  var stallTimer = null;
+  audio.addEventListener("playing", function () { clearTimeout(stallTimer); retries = 0; if (on) setStatus("On air" + (current && current.bitrate ? "  " + current.bitrate + " kbps " + (current.codec || "") : ""), "on"); });
+  audio.addEventListener("waiting", function () {
+    if (!on) return;
+    setStatus("Buffering", "busy");
+    clearTimeout(stallTimer);
+    stallTimer = setTimeout(function () { if (on && audio.readyState < 3) lost(); }, 12000);
+  });
+  audio.addEventListener("error", lost);
 
   $("power").addEventListener("click", function () { power(!on); });
   $("next").addEventListener("click", function () { seek(1); });
@@ -338,7 +454,7 @@ button { cursor: pointer; }
       b.type = "button"; b.className = "key preset" + (p ? " set" : "");
       b.setAttribute("aria-label", "Preset " + (i + 1) + (p ? ", " + p.name : ", empty"));
       var num = document.createElement("b"); num.textContent = i + 1;
-      var lab = document.createElement("span"); lab.textContent = p ? fmt(p.f) : "empty";
+      var lab = document.createElement("span"); lab.textContent = p ? p.name : "empty";
       b.appendChild(num); b.appendChild(lab);
       var timer = null, held = false;
       b.addEventListener("pointerdown", function () {
@@ -346,9 +462,9 @@ button { cursor: pointer; }
         timer = setTimeout(function () {
           held = true;
           if (!current) return;
-          presets[i] = { id: current.id, name: current.name, url: current.url, f: current.f, bitrate: current.bitrate };
+          presets[i] = { id: current.id, name: current.name, url: current.url, f: current.f, bitrate: current.bitrate, codec: current.codec, cc: current.cc };
           save("fm.presets", presets); renderPresets();
-          setStatus("Saved to preset " + (i + 1), on ? "on" : "");
+          setStatus("Saved to preset " + (i + 1), live ? "on" : "");
         }, 600);
       });
       ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(timer); }); });
@@ -357,9 +473,9 @@ button { cursor: pointer; }
         if (held) return;
         if (!presets[i]) { setStatus("Preset " + (i + 1) + " is empty. Hold it to save this station."); return; }
         var s = band.filter(function (t) { return t.id === presets[i].id; })[0];
-        if (!s) { s = presets[i]; band.push(s); band.sort(byF); renderMarks(); renderList(); }
+        if (!s) { s = Object.assign({}, presets[i]); band.push(s); band.sort(byF); renderMarks(); renderList(); }
         if (!on) power(true);
-        tune(s, true);
+        tune(s);
       });
       elPresets.appendChild(b);
     });
@@ -368,27 +484,90 @@ button { cursor: pointer; }
   /* ---------- station directory ---------- */
   function byF(a, b) { return a.f - b.f; }
   function parseFreq(name) {
-    var m = /(?:^|[^\d.])((?:8[7-9]|9\d|10[0-7])(?:\.\d)?)(?![\d.])/.exec(name);
-    if (!m) return null;
-    var f = parseFloat(m[1]);
+    var mm = /(?:^|[^\d.])((?:8[7-9]|9\d|10[0-7])(?:\.\d)?)(?![\d.])/.exec(name);
+    if (!mm) return null;
+    var f = parseFloat(mm[1]);
     return f >= MIN && f <= MAX ? f : null;
+  }
+  function normalise(rows) {
+    return (rows || []).filter(function (r) { return r.url_resolved && /^https:/i.test(r.url_resolved) && r.name && r.name.trim(); })
+      .map(function (r) {
+        var name = r.name.trim().replace(/\s+/g, " ").slice(0, 60);
+        return { id: r.stationuuid, name: name, url: r.url_resolved, bitrate: r.bitrate || 0, codec: r.codec || "", cc: r.countrycode || "",
+                 hay: (name + " " + (r.tags || "").slice(0, 80) + " " + (r.state || "") + " " + (r.language || "")).toLowerCase() };
+      });
+  }
+  function api(q, lim) {
+    var order = mirror ? [mirror].concat(MIRRORS.filter(function (mi) { return mi !== mirror; })) : MIRRORS.slice();
+    var i = 0;
+    return new Promise(function (resolve, reject) {
+      (function next() {
+        if (i >= order.length) { reject(new Error("offline")); return; }
+        var mi = order[i++];
+        var url = "https://" + mi + ".api.radio-browser.info/json/stations/search?" + (q ? q + "&" : "") +
+                  "hidebroken=true&is_https=true&order=clickcount&reverse=true&limit=" + (lim || 60);
+        var ctl = window.AbortController ? new AbortController() : null;
+        var t = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
+        fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+          .then(function (rows) { clearTimeout(t); mirror = mi; resolve(normalise(rows)); })
+          .catch(function () { clearTimeout(t); next(); });
+      })();
+    });
+  }
+  function loadRegion(force) {
+    var r = region(), key = "fm.r." + r.n, cache = load(key, null);
+    chipRegion.textContent = r.short || r.n;
+    found = [];
+    if (!force && cache && Date.now() - cache.at < 864e5) { data = cache; buildBand(); return; }
+    var token = ++loadToken;
+    band = []; renderMarks();
+    message("Scanning " + r.n + " for stations");
+    setName("Scanning"); setStatus("Scanning for stations", "busy");
+    var none = function () { return null; };
+    var jobs = r.q.map(function (q) { return api(q, r.lim || 60).catch(none); });
+    jobs.push(r.fill ? api(r.fill, 60).catch(none) : Promise.resolve([]));
+    Promise.all(jobs).then(function (res) {
+      if (token !== loadToken) return;
+      var fill = res.pop();
+      if (!res.some(function (v) { return v; }) && !fill) {
+        if (cache) { data = cache; buildBand(); return; }
+        setName("No stations"); setStatus("");
+        message("Could not reach the station directory. Check your internet connection.", true);
+        return;
+      }
+      var local = [];
+      res.forEach(function (v) { if (v) local = local.concat(v); });
+      data = { at: Date.now(), local: local.slice(0, 240), fill: (fill || []).slice(0, 60) };
+      save(key, data);
+      buildBand();
+    });
   }
   function buildBand() {
     var q = elSearch.value.trim().toLowerCase();
-    var keys = (REGIONS.filter(function (r) { return r[0] === elRegion.value; })[0] || REGIONS[0])[1];
     var picked = [], seen = {};
-    function take(s, local) {
+    function take(s, kind) {
+      if (hqOnly && (s.bitrate || 0) < 128) return;
       var key = s.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (seen[key] || picked.length >= 36) return;
-      seen[key] = 1; picked.push({ id: s.id, name: s.name, url: s.url, bitrate: s.bitrate, tags: s.tags, local: local, want: parseFreq(s.name) });
+      if (!key) return;
+      if (key in seen) {
+        // Same station listed twice: keep the better-sounding stream.
+        var p = picked[seen[key]];
+        if ((s.bitrate || 0) > (p.bitrate || 0)) { p.url = s.url; p.bitrate = s.bitrate; p.codec = s.codec; }
+        return;
+      }
+      if (picked.length >= (kind === "local" ? MAXLOCAL : 60)) return;
+      seen[key] = picked.length;
+      picked.push(Object.assign({}, s, { local: kind === "local", found: kind === "found", want: parseFreq(s.name) }));
     }
-    if (q) all.forEach(function (s) { if (s.hay.indexOf(q) >= 0) take(s, true); });
-    else {
-      if (keys.length) all.forEach(function (s) { if (keys.some(function (k) { return s.hay.indexOf(k) >= 0; })) take(s, true); });
+    if (q) {
+      data.local.concat(data.fill).forEach(function (s) { if (s.hay.indexOf(q) >= 0) take(s, data.local.indexOf(s) >= 0 ? "local" : "fill"); });
+      found.forEach(function (s) { take(s, "found"); });
+    } else {
+      data.local.forEach(function (s) { take(s, "local"); });
       var room = Math.max(24, picked.length);
-      all.forEach(function (s) { if (picked.length < room) take(s, !keys.length); });
+      data.fill.forEach(function (s) { if (picked.length < room) take(s, "fill"); });
     }
-    // Put stations on a 0.2 MHz grid: real frequencies first, the rest spread across the gaps.
+    // Place stations on a 0.2 MHz grid: real frequencies first, the rest spread across the gaps.
     var slots = [], used = {};
     for (var i = 0; i <= 101; i++) slots.push(Math.round((87.7 + i * 0.2) * 10) / 10);
     function claim(want) {
@@ -401,34 +580,59 @@ button { cursor: pointer; }
     rest.forEach(function (s, j) { s.f = claim(88.1 + (j + 0.5) * (19.4 / rest.length)); });
     band = picked.sort(byF);
     renderMarks(); renderList();
-    if (!band.length) { current = null; elName.textContent = q ? "No match" : "No stations"; return; }
+    if (!band.length) {
+      current = null; chipQ.textContent = ""; chipCC.textContent = "";
+      setName(q ? "No match" : "No stations");
+      if (on) { audio.pause(); setStatus(hqOnly ? "No HQ streams here. Turn HQ off for more." : "Nothing found"); }
+      return;
+    }
     var lastId = load("fm.last", null);
     var s = (current && band.filter(function (t) { return t.id === current.id; })[0]) ||
             band.filter(function (t) { return t.id === lastId; })[0] ||
             band.filter(function (t) { return t.local; })[0] || band[0];
-    if (current && s.id === current.id) { current = s; freq = s.f; renderDial(true); markList(); }
-    else tune(s, false);
+    if (current && s.id === current.id) {
+      current = s; freq = s.f; renderDial(true); markList(); setName(s.name);
+      if (!on) setStatus("Radio is off. Press the power button.");
+      else if (!audio.paused && audio.readyState >= 3) setStatus("On air" + (s.bitrate ? "  " + s.bitrate + " kbps " + (s.codec || "") : ""), "on");
+      else play();
+    }
+    else tune(s);
   }
   function renderMarks() {
     Array.prototype.slice.call(strip.querySelectorAll(".mark")).forEach(function (n) { n.remove(); });
     band.forEach(function (s) {
       var d = document.createElement("div");
-      d.className = "mark" + (s.local ? " local" : ""); d.style.left = x(s.f) + "px";
+      d.className = "mark" + (s.local ? " local" : "") + ((s.bitrate || 0) >= 128 ? " hq" : "");
+      d.style.left = x(s.f) + "px";
       strip.appendChild(d);
     });
   }
+  function row(s) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "row"; b.dataset.id = s.id;
+    var f = document.createElement("span"); f.className = "f"; f.textContent = fmt(s.f);
+    var n = document.createElement("span"); n.className = "n"; n.textContent = s.name;
+    var t = document.createElement("span"); t.className = "t" + ((s.bitrate || 0) >= 128 ? " hq" : "");
+    t.textContent = (s.cc && s.cc !== "IN" && !s.local ? s.cc + " " : "") + quality(s);
+    b.appendChild(f); b.appendChild(n); b.appendChild(t);
+    b.addEventListener("click", function () { if (!on) power(true); tune(s); });
+    return b;
+  }
   function renderList() {
     elList.textContent = "";
-    if (!band.length) { message("No stations match. Clear the search or pick another area."); return; }
-    band.forEach(function (s) {
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "row"; b.dataset.id = s.id;
-      var f = document.createElement("span"); f.className = "f"; f.textContent = fmt(s.f);
-      var n = document.createElement("span"); n.className = "n"; n.textContent = s.name;
-      var t = document.createElement("span"); t.className = "t"; t.textContent = s.local ? "Local" : "";
-      b.appendChild(f); b.appendChild(n); b.appendChild(t);
-      b.addEventListener("click", function () { if (!on) power(true); tune(s, true); });
-      elList.appendChild(b);
+    if (!band.length) {
+      message(elSearch.value.trim() ? "No stations match. Try another name or clear the search." :
+              hqOnly ? "No high quality streams in this area. Turn HQ off to see all stations." :
+              "No stations here. Pick another area.");
+      return;
+    }
+    var groups = [["local", "In " + (region().short || region().n)], ["fill", "More stations"], ["found", "Found worldwide"]];
+    var withHead = band.some(function (s) { return !s.local; });
+    groups.forEach(function (g) {
+      var items = band.filter(function (s) { return g[0] === "local" ? s.local : g[0] === "found" ? s.found : !s.local && !s.found; });
+      if (!items.length) return;
+      if (withHead) { var h = document.createElement("div"); h.className = "section"; h.textContent = g[1]; elList.appendChild(h); }
+      items.forEach(function (s) { elList.appendChild(row(s)); });
     });
     markList();
   }
@@ -442,69 +646,64 @@ button { cursor: pointer; }
     var d = document.createElement("div"); d.className = "empty"; d.textContent = text;
     if (retry) {
       var b = document.createElement("button"); b.type = "button"; b.className = "key"; b.textContent = "Try again";
-      b.addEventListener("click", fetchStations);
+      b.addEventListener("click", function () { loadRegion(true); });
       d.appendChild(document.createElement("br")); d.appendChild(b);
     }
     elList.appendChild(d);
   }
-  function normalise(rows) {
-    return rows.filter(function (r) { return r.url_resolved && /^https:/i.test(r.url_resolved) && r.name && r.name.trim(); })
-      .map(function (r) {
-        var name = r.name.trim().replace(/\s+/g, " ").slice(0, 60);
-        return { id: r.stationuuid, name: name, url: r.url_resolved, bitrate: r.bitrate || 0, tags: r.tags || "",
-                 hay: (name + " " + (r.tags || "") + " " + (r.state || "") + " " + (r.language || "")).toLowerCase() };
-      });
-  }
-  function fetchStations() {
-    var cache = load("fm.cache", null);
-    if (cache && cache.rows && Date.now() - cache.at < 864e5) { all = cache.rows; buildBand(); return; }
-    message("Scanning for stations");
-    var i = 0;
-    (function attempt() {
-      if (i >= MIRRORS.length) {
-        if (cache && cache.rows) { all = cache.rows; buildBand(); return; }
-        elName.textContent = "No stations";
-        message("Could not reach the station directory. Check your internet connection.", true);
-        return;
-      }
-      var url = "https://" + MIRRORS[i++] + ".api.radio-browser.info/json/stations/search?countrycode=IN&hidebroken=true&is_https=true&order=clickcount&reverse=true&limit=800";
-      var ctl = "AbortController" in window ? new AbortController() : null;
-      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
-      fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { if (!r.ok) throw 0; return r.json(); })
-        .then(function (rows) {
-          clearTimeout(timer);
-          all = normalise(rows);
-          if (!all.length) throw 0;
-          save("fm.cache", { at: Date.now(), rows: all });
-          buildBand();
-        }).catch(function () { clearTimeout(timer); attempt(); });
-    })();
-  }
 
   /* ---------- start ---------- */
-  REGIONS.forEach(function (r) { var o = document.createElement("option"); o.textContent = r[0]; elRegion.appendChild(o); });
+  var groups = {};
+  REGIONS.forEach(function (r) {
+    if (!groups[r.g]) { groups[r.g] = document.createElement("optgroup"); groups[r.g].label = r.g; elRegion.appendChild(groups[r.g]); }
+    var o = document.createElement("option"); o.textContent = r.n; o.value = r.n; groups[r.g].appendChild(o);
+  });
   elRegion.value = load("fm.region", "Mumbai");
   if (!elRegion.value) elRegion.value = "Mumbai";
-  elRegion.addEventListener("change", function () { save("fm.region", elRegion.value); elSearch.value = ""; buildBand(); });
+  elRegion.addEventListener("change", function () { save("fm.region", elRegion.value); elSearch.value = ""; loadRegion(false); });
+
   var st = null;
-  elSearch.addEventListener("input", function () { clearTimeout(st); st = setTimeout(buildBand, 250); });
+  elSearch.addEventListener("input", function () {
+    clearTimeout(st);
+    st = setTimeout(function () {
+      var q = elSearch.value.trim(), token = ++searchToken;
+      found = [];
+      buildBand();
+      if (q.length >= 3) {
+        api("name=" + encodeURIComponent(q), 40).then(function (rows) {
+          if (token !== searchToken) return;
+          found = rows; buildBand();
+        }, function () {});
+      }
+    }, 350);
+  });
+
+  function setHQ(v) {
+    hqOnly = v; save("fm.hq", v);
+    elHQ.setAttribute("aria-pressed", v ? "true" : "false");
+  }
+  setHQ(hqOnly);
+  elHQ.addEventListener("click", function () { setHQ(!hqOnly); buildBand(); });
 
   // Home screen icon drawn in the page so the app stays a single file.
+  var icon = null;
   try {
     var c = document.createElement("canvas"); c.width = c.height = 180;
     var g = c.getContext("2d");
-    g.fillStyle = "#14171c"; g.fillRect(0, 0, 180, 180);
-    g.fillStyle = "#2a1c08"; g.fillRect(20, 34, 140, 62);
+    g.fillStyle = "#0e1116"; g.fillRect(0, 0, 180, 180);
+    g.fillStyle = "#2a1c08"; g.fillRect(18, 30, 144, 66);
+    g.fillStyle = "#5fd8e0"; g.fillRect(26, 38, 22, 4);
     g.fillStyle = "#ffb347"; g.font = "bold 44px monospace"; g.textAlign = "center"; g.fillText("98.3", 90, 82);
     g.fillStyle = "#c9cfd8"; for (var k = 0; k < 12; k++) g.fillRect(24 + k * 12, 116, 2, k % 3 ? 14 : 26);
     g.fillStyle = "#ff4b3a"; g.fillRect(88, 108, 4, 44);
-    var link = document.createElement("link"); link.rel = "apple-touch-icon"; link.href = c.toDataURL("image/png");
+    icon = c.toDataURL("image/png");
+    var link = document.createElement("link"); link.rel = "apple-touch-icon"; link.href = icon;
     document.head.appendChild(link);
   } catch (e) {}
 
   renderPresets();
   renderDial(false);
-  fetchStations();
+  loadRegion(false);
 })();
 </script>
 </body>
